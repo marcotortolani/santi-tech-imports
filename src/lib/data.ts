@@ -182,7 +182,7 @@ export async function fetchNotebooks(url: string): Promise<Product[]> {
             category: 'notebooks',
             brand: brand,
             model: model,
-            price: price * 1.2,
+            price: price * 1.25,
             details: specs,
           })
         }
@@ -260,7 +260,7 @@ export async function fetchProductsForCategory(
             category: category,
             brand: currentBrand,
             model: model,
-            price: price * 1.2,
+            price: price * 1.25,
             details: currentDetails,
           })
         }
