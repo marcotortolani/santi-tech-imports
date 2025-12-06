@@ -1,19 +1,19 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Product, ProductCategory } from '@/types';
-import { fetchProductsForCategory, productCategories } from '@/lib/data';
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import type { Product, ProductCategory } from '@/types'
+import { fetchProductsForCategory, productCategories } from '@/lib/data'
 
 interface ProductState {
-  products: Product[];
-  categories: ProductCategory[];
-  isLoading: boolean;
-  lastFetched: number | null;
+  products: Product[]
+  categories: ProductCategory[]
+  isLoading: boolean
+  lastFetched: number | null
   actions: {
-    fetchAllProducts: (force?: boolean) => Promise<void>;
-  };
+    fetchAllProducts: (force?: boolean) => Promise<void>
+  }
 }
 
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+const CACHE_DURATION = 1000 * 60 * 60 // 1 hour
 
 export const useProductStore = create<ProductState>()(
   persist(
@@ -24,35 +24,39 @@ export const useProductStore = create<ProductState>()(
       lastFetched: null,
       actions: {
         fetchAllProducts: async (force = false) => {
-          const { isLoading, lastFetched } = get();
-          const now = Date.now();
-          
+          const { isLoading, lastFetched } = get()
+          const now = Date.now()
+
           // Avoid refetching if already loading, or if not forced and cache is still valid
-          if (isLoading || (!force && lastFetched && now - lastFetched < CACHE_DURATION)) {
-            return;
+          if (
+            isLoading ||
+            (!force && lastFetched && now - lastFetched < CACHE_DURATION)
+          ) {
+            return
           }
 
-          set({ isLoading: true });
+          set({ isLoading: true })
           try {
             const categoryPromises = Object.entries(productCategories).map(
-              ([category, url]) => fetchProductsForCategory(category as ProductCategory, url)
-            );
-            
-            const results = await Promise.all(categoryPromises);
-            const allProducts = results.flat();
+              ([category, url]) =>
+                fetchProductsForCategory(category as ProductCategory, url)
+            )
 
-            set({ products: allProducts, isLoading: false, lastFetched: now });
+            const results = await Promise.all(categoryPromises)
+            const allProducts = results.flat()
+
+            set({ products: allProducts, isLoading: false, lastFetched: now })
           } catch (error) {
-            console.error('Error fetching products for store:', error);
-            set({ isLoading: false });
+            console.error('Error fetching products for store:', error)
+            set({ isLoading: false })
           }
         },
       },
     }),
     {
       name: 'santi-techs-products-v2', // new name for the new structure
-      storage: createJSONStorage(() => localStorage), 
-      partialize: (state) => ({ 
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
         products: state.products,
         lastFetched: state.lastFetched,
       }),
@@ -60,13 +64,13 @@ export const useProductStore = create<ProductState>()(
         return (state) => {
           if (state) {
             // Fetch in background on rehydration if cache is expired
-            state.actions.fetchAllProducts();
+            state.actions.fetchAllProducts()
           }
-        };
+        }
       },
     }
   )
-);
+)
 
 // Expose actions directly for easier access in components
-export const useProductActions = () => useProductStore((state) => state.actions);
+export const useProductActions = () => useProductStore((state) => state.actions)
