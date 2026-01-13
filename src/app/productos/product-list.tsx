@@ -108,7 +108,6 @@ export default function ProductList() {
 
       // Force fetch if we don't have products for this category
       if (!hasProductsForCategory(category)) {
-        console.log(`Forcing fetch for category: ${category}`)
         actions.fetchAllProducts(true) // Force refresh
       }
     },

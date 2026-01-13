@@ -3,6 +3,11 @@
 import Papa from 'papaparse'
 import type { Product, ProductCategory } from '@/types'
 
+const MARKUP_PERCENTAGE = parseFloat(
+  process.env.PRICE_MARKUP_PERCENTAGE || '20'
+)
+const MARKUP_MULTIPLIER = 1 + MARKUP_PERCENTAGE / 100
+
 // Helper function to clean and parse price
 const parsePrice = (priceStr: string | undefined): number => {
   if (!priceStr) return NaN
@@ -94,16 +99,16 @@ const cleanNotebookModel = (producto: string): string => {
 }
 
 const isNotebookProductRow = (columns: string[]): boolean => {
-  if (columns.length < 3) return false
-  const precio = columns[1]?.trim() || ''
-  const producto = columns[2]?.trim() || ''
+  if (columns.length < 2) return false
+  const precio = columns[0]?.trim() || '' // ✅ Columna 0 tiene el precio
+  const producto = columns[1]?.trim() || '' // ✅ Columna 1 tiene el producto
   return precio.includes('U$') && producto.includes('💻')
 }
 
 const isNotebookSpecsRow = (columns: string[]): boolean => {
-  if (columns.length < 3) return false
-  const precio = columns[1]?.trim() || ''
-  const producto = columns[2]?.trim() || ''
+  if (columns.length < 2) return false
+  const precio = columns[0]?.trim() || '' // ✅ Columna 0 debería estar vacía
+  const producto = columns[1]?.trim() || '' // ✅ Columna 1 tiene las specs
   return precio === '' && !producto.startsWith('*') && !producto.includes('💻')
 }
 
@@ -152,23 +157,24 @@ export async function fetchNotebooks(url: string): Promise<Product[]> {
     const notebooks: Product[] = []
     let idCounter = 0
 
-    for (let i = 0; i < rows.length; i++) {
+    // Empezar desde 2 para saltar las filas de encabezado
+    for (let i = 2; i < rows.length; i++) {
       const columns = rows[i]
 
-      if (!columns || columns.length < 3) continue
+      if (!columns || columns.length < 2) continue
 
       if (isNotebookProductRow(columns)) {
         const nextRow = i + 1 < rows.length ? rows[i + 1] : null
         let specs = ''
 
         if (nextRow && isNotebookSpecsRow(nextRow)) {
-          specs = nextRow[2]?.trim() || ''
+          specs = nextRow[1]?.trim() || '' // ✅ Columna 1 tiene las specs
           i++
         }
 
-        const price = parsePrice(columns[1])
-        const model = cleanNotebookModel(columns[2])
-        const brand = extractBrandFromNotebook(columns[2])
+        const price = parsePrice(columns[0]) // ✅ Columna 0 tiene el precio
+        const model = cleanNotebookModel(columns[1]) // ✅ Columna 1 tiene el modelo
+        const brand = extractBrandFromNotebook(columns[1])
 
         if (!isNaN(price) && model) {
           notebooks.push({
@@ -176,12 +182,13 @@ export async function fetchNotebooks(url: string): Promise<Product[]> {
             category: 'notebooks',
             brand: brand,
             model: model,
-            price: price * 1.3,
+            price: price * MARKUP_MULTIPLIER,
             details: specs,
           })
         }
       }
     }
+
     return notebooks
   } catch (error) {
     console.error('Error fetching or parsing notebooks:', error)
@@ -240,7 +247,6 @@ export async function fetchProductsForCategory(
         const brandInfo = extractBrandInfo(columns)
         currentBrand = brandInfo.brand
         currentDetails = brandInfo.details
-        console.log(`Brand detected: ${currentBrand}`)
         continue
       }
 
@@ -256,14 +262,12 @@ export async function fetchProductsForCategory(
             category: category,
             brand: currentBrand,
             model: model,
-            price: price * 1.3,
+            price: price * MARKUP_MULTIPLIER,
             details: currentDetails,
           })
         }
       }
     }
-
-    console.log(`Total products found for ${category}:`, products.length)
 
     return products
   } catch (error) {

@@ -1,4 +1,4 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  env: {
+    PRICE_MARKUP_PERCENTAGE: '20', // Porcentaje de markup para los precios
   },
   images: {
     remotePatterns: [
@@ -39,9 +42,9 @@ const nextConfig: NextConfig = {
         hostname: 'plus.unsplash.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig
